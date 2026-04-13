@@ -11,7 +11,9 @@ public sealed record ApprovedIntentV1(
     [property: JsonPropertyName("qty")] int Qty,
     [property: JsonPropertyName("idempotency_key")] string? IdempotencyKey,
     [property: JsonPropertyName("environment")] string? Environment,
-    [property: JsonPropertyName("created_at_unix")] double CreatedAtUnix);
+    [property: JsonPropertyName("created_at_unix")] double CreatedAtUnix,
+    /// <summary>W3C traceparent from upstream (e.g. signal-agent) for distributed trace linkage.</summary>
+    [property: JsonPropertyName("traceparent")] string? TraceParent);
 
 [JsonSerializable(typeof(ApprovedIntentV1))]
 internal partial class ExecutionJsonContext : JsonSerializerContext;

@@ -13,6 +13,9 @@ Patterns: `NpgsqlDataSource` pooling, source-generated `System.Text.Json`, `Peri
 | `REDIS_ADDR` | Legacy fallback for Redis |
 | `APCA_API_KEY_ID` | Alpaca (wire SDK next) |
 | `APCA_API_SECRET_KEY` | Alpaca secret |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | e.g. `http://otel-collector:4317` — enables OTLP traces (`Execution.Gateway` source) |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Alternative to combined OTLP endpoint |
+| `OTEL_SDK_DISABLED` | Set `true` to disable tracing even if endpoint is set |
 
 ## Build
 
@@ -30,6 +33,10 @@ Prometheus **`/metrics`** on port **9090** (`METRICS_PORT`). Counters: `agentmes
 ```bash
 docker build -t agent-mesh-execution .
 ```
+
+## ApprovedIntent extras
+
+Optional **`traceparent`** (W3C) may be set by **signal-agent** when OTLP is enabled so this service can link **`ProcessStreamEntry`** as a child span.
 
 ## Related repos
 

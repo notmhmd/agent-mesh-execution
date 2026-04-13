@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,10 @@ public sealed class IntentConsumerWorker : BackgroundService
 {
     public const string StreamKey = "stream:approved:intents";
     public const string GroupName = "execution";
+    /// <summary>OpenTelemetry <see cref="ActivitySource"/> name (OTLP when configured).</summary>
+    public const string ActivitySourceName = "Execution.Gateway";
+
+    private static readonly ActivitySource Otel = new(ActivitySourceName, "1.0.0");
     private readonly IConnectionMultiplexer _mux;
     private readonly DataSources _data;
     private readonly ILogger<IntentConsumerWorker> _log;
@@ -53,9 +58,10 @@ public sealed class IntentConsumerWorker : BackgroundService
                     count: 32,
                     noAck: false).ConfigureAwait(false);
 
+                // Tight spin when idle: sub-10ms delay keeps end-to-end latency low after XADD.
                 if (entries.Length == 0)
                 {
-                    await Task.Delay(50, stoppingToken).ConfigureAwait(false);
+                    await Task.Delay(5, stoppingToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -125,7 +131,24 @@ public sealed class IntentConsumerWorker : BackgroundService
             _log.LogWarning(ex, "invalid JSON in stream entry {Id}", entry.Id);
         }
 
+        ActivityContext parentCtx = default;
+        var linked = false;
+        if (!string.IsNullOrWhiteSpace(intent?.TraceParent)
+            && ActivityContext.TryParse(intent.TraceParent, null, true, out parentCtx))
+        {
+            linked = true;
+        }
+
+        using var activity = linked
+            ? Otel.StartActivity("ProcessStreamEntry", ActivityKind.Consumer, parentCtx)
+            : Otel.StartActivity("ProcessStreamEntry", ActivityKind.Consumer);
+        activity?.SetTag("redis.stream.entry_id", entry.Id.ToString());
+        if (linked)
+            activity?.SetTag("otel.trace_linked", true);
+
         _log.LogInformation("Consumed intent {IntentId} id={EntryId}", intent?.IntentId, entry.Id);
+        activity?.SetTag("intent.intent_id", intent?.IntentId);
+        activity?.SetTag("intent.trace_id", intent?.TraceId);
 
         if (_data.Postgres is { } pg)
         {
