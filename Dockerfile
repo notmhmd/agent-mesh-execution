@@ -1,13 +1,12 @@
-FROM golang:1.22-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build -o /gateway ./cmd/gateway
+COPY Execution.Gateway.csproj .
+RUN dotnet restore
+COPY Program.cs .
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates
+FROM mcr.microsoft.com/dotnet/runtime:8.0
 WORKDIR /app
-COPY --from=build /gateway .
-ENV REDIS_ADDR=redis:6379
-ENTRYPOINT ["/app/gateway"]
+COPY --from=build /app/publish .
+ENV ConnectionStrings__Redis=redis:6379,abortConnect=false
+ENTRYPOINT ["dotnet", "Execution.Gateway.dll"]

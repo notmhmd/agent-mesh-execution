@@ -1,4 +1,5 @@
-/gateway
-*.exe
+bin/
+obj/
 .env
 .DS_Store
+*.user
