@@ -1,6 +1,7 @@
 using Execution.Gateway;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Npgsql;
 using StackExchange.Redis;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -17,6 +18,18 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
     opts.AbortOnConnectFail = false;
     return ConnectionMultiplexer.Connect(opts);
 });
+
+var pgConn =
+    builder.Configuration["ConnectionStrings:Postgres"]
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__Postgres");
+
+var pgSource = string.IsNullOrWhiteSpace(pgConn)
+    ? null
+    : new NpgsqlDataSourceBuilder(pgConn).Build();
+
+builder.Services.AddSingleton(new DataSources(pgSource));
+
+builder.Services.AddHostedService<HeartbeatPublisher>();
 builder.Services.AddHostedService<IntentConsumerWorker>();
 
 var app = builder.Build();

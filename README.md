@@ -1,18 +1,17 @@
 # agent-mesh-execution
 
-**.NET 8** execution gateway: consumes `ApprovedIntent` messages from Redis, will submit to Alpaca with idempotency and persist results. Keeps LLM/agent logic off the hot path.
+**.NET 9** execution gateway: **Redis Streams** consumer group `execution` on `stream:approved:intents` (field `data` = JSON). Inserts into Postgres `execution_events`, **XACK** after commit. Alpaca submit next.
 
-## Why .NET here
-
-Strong fit for long-running services, async I/O (Redis, HTTP, Postgres), typed domain models for orders/intents, and straightforward observability (OpenTelemetry) as the service grows.
+Patterns: `NpgsqlDataSource` pooling, source-generated `System.Text.Json`, `PeriodicTimer` heartbeat (see `HeartbeatPublisher`).
 
 ## Env
 
 | Variable | Description |
 |----------|-------------|
 | `ConnectionStrings__Redis` | e.g. `redis:6379,abortConnect=false` |
-| `REDIS_ADDR` | Fallback if `ConnectionStrings__Redis` unset |
-| `APCA_API_KEY_ID` | Alpaca (wire Alpaca SDK next) |
+| `ConnectionStrings__Postgres` | Npgsql connection string (optional; skips DB if unset) |
+| `REDIS_ADDR` | Legacy fallback for Redis |
+| `APCA_API_KEY_ID` | Alpaca (wire SDK next) |
 | `APCA_API_SECRET_KEY` | Alpaca secret |
 
 ## Build
