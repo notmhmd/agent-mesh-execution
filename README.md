@@ -21,6 +21,10 @@ dotnet build
 dotnet run
 ```
 
+## Metrics
+
+Prometheus **`/metrics`** on port **9090** (`METRICS_PORT`). Counters: `agentmesh_execution_intents_consumed_total`, `agentmesh_execution_intent_errors_total`; gauge: `agentmesh_execution_heartbeat_unixtime`.
+
 ## Docker
 
 ```bash

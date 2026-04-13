@@ -27,7 +27,9 @@ public sealed class HeartbeatPublisher : BackgroundService
             {
                 try
                 {
-                    var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+                    var unix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    AgentMetrics.HeartbeatUnix.Set(unix);
+                    var now = unix.ToString();
                     await db.StringSetAsync(
                         "execution:heartbeat",
                         now,

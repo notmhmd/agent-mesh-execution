@@ -110,6 +110,7 @@ public sealed class IntentConsumerWorker : BackgroundService
         if (string.IsNullOrEmpty(raw))
         {
             _log.LogWarning("Stream entry {Id} missing data field", entry.Id);
+            AgentMetrics.IntentProcessingErrors.Inc();
             await db.StreamAcknowledgeAsync(StreamKey, GroupName, entry.Id).ConfigureAwait(false);
             return;
         }
@@ -140,11 +141,13 @@ public sealed class IntentConsumerWorker : BackgroundService
         }
 
         await db.StreamAcknowledgeAsync(StreamKey, GroupName, entry.Id).ConfigureAwait(false);
+        AgentMetrics.IntentsConsumed.Inc();
 
-        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var unix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        AgentMetrics.HeartbeatUnix.Set(unix);
         await db.StringSetAsync(
             "execution:heartbeat",
-            now,
+            unix.ToString(),
             TimeSpan.FromMinutes(5)).ConfigureAwait(false);
     }
 }

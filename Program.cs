@@ -29,6 +29,7 @@ var pgSource = string.IsNullOrWhiteSpace(pgConn)
 
 builder.Services.AddSingleton(new DataSources(pgSource));
 
+builder.Services.AddHostedService<PrometheusMetricServer>();
 builder.Services.AddHostedService<HeartbeatPublisher>();
 builder.Services.AddHostedService<IntentConsumerWorker>();
 
