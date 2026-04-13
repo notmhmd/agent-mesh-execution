@@ -80,11 +80,11 @@ public sealed class IntentConsumerWorker : BackgroundService
     {
         try
         {
-            // "$" = only messages arriving after group creation (typical for new workloads)
+            // "0" = deliver stream backlog after group is created (avoids race if publisher XADDs first)
             await db.StreamCreateConsumerGroupAsync(
                 StreamKey,
                 GroupName,
-                "$",
+                "0",
                 true).ConfigureAwait(false);
         }
         catch (RedisServerException ex) when (ex.Message.Contains("BUSYGROUP", StringComparison.Ordinal))
