@@ -1,0 +1,4 @@
+/gateway
+*.exe
+.env
+.DS_Store
